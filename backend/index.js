@@ -1,13 +1,29 @@
-const express = require('express');
+import express from "express";
+import dotenv from "dotenv";
+import morgan from "morgan";
+import connectDB from "./config/db.js";
+import authRoutes from "./routes/authRoute.js";
+import cors from "cors";
+
+dotenv.config();
+
+//db connection
+connectDB();
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Middleware to parse JSON bodies
+app.use(cors());
+app.use(morgan("dev"));
 app.use(express.json());
 
-// Sample route
-app.get('/', (req, res) => {
-  res.send('Hello, world!');
+//routes
+app.use("/api/v1/auth/", authRoutes);
+
+// rest apis
+app.get("/", (req, res) => {
+  res.send("Hello, world!");
 });
 
 // Start the server
