@@ -3,7 +3,7 @@ import userModel from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 export const registerController = async (req, res) => {
   try {
-    const { name, email, password, phone, address } = req.body;
+    const { name, email, password, phone, address, answer } = req.body;
     //validations
     if (!name) {
       return res.send({ message: "Name is erquired" });
@@ -11,7 +11,7 @@ export const registerController = async (req, res) => {
     if (!password) {
       return res.send({ message: "password is erquired" });
     }
-    if (!email) { 
+    if (!email) {
       return res.send({ message: "email is erquired" });
     }
     if (!phone) {
@@ -19,6 +19,9 @@ export const registerController = async (req, res) => {
     }
     if (!address) {
       return res.send({ message: "address is erquired" });
+    }
+    if (!answer) {
+      return res.send({ message: "answer is erquired" });
     }
 
     //check for existing user
@@ -38,6 +41,7 @@ export const registerController = async (req, res) => {
       phone,
       address,
       password: hashedPassword,
+      answer
     }).save();
     res.status(201).send({
       success: true,
@@ -60,7 +64,7 @@ export const loginController = async (req, res) => {
     //validation
     if (!email || !password) {
       return res.status(404).send({
-        sucess: false,
+        success: false,
         message: "invalid email or password",
       });
     }
@@ -68,7 +72,7 @@ export const loginController = async (req, res) => {
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(404).send({
-        sucess: false,
+        success: false,
         message: "Error in login",
       });
     }
@@ -76,7 +80,7 @@ export const loginController = async (req, res) => {
     const match = await comparePassword(password, user.password);
     if (!match) {
       return res.status(200).send({
-        sucess: false,
+        success: false,
         message: "Invalid password",
       });
     }
@@ -87,13 +91,14 @@ export const loginController = async (req, res) => {
       expiresIn: "7d",
     });
     res.status(200).send({
-      sucess: true,
+      success: true,
       message: "login successfully",
       user: {
         name: user.name,
         email: user.email,
         phone: user.phone,
         address: user.address,
+        role:user.role
       },
       token,
     });
@@ -102,6 +107,45 @@ export const loginController = async (req, res) => {
     res.status(500).send({
       success: false,
       message: "Login error",
+      error,
+    });
+  }
+};
+
+//forgotPasswordController
+export const forgotPasswordController = async (req, res) => {
+  try {
+    const { email, answer, newPassword } = req.body;
+    if (!email) {
+      return res.send({ message: "email is erquired" });
+    }
+    if (!newPassword) {
+      return res.send({ message: "New Password is erquired" });
+    }
+    if (!answer) {
+      return res.send({ message: "answer is erquired" });
+    }
+
+    //check
+    const user = await userModel.findOne({ email, answer });
+    //validation
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "Wrong email or password",
+      });
+    }
+    const hashed = await hashPassword(newPassword);
+    await userModel.findByIdAndUpdate(user._id, { password: hashed });
+    res.status(200).send({
+      success: true,
+      message: "Password Reset successfullly",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "something went wrong",
       error,
     });
   }
